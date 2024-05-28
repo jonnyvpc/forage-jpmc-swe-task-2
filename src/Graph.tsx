@@ -14,7 +14,7 @@ interface IProps {
  * Perspective library adds load to HTMLElement prototype.
  * This interface acts as a wrapper for Typescript compiler.
  */
-interface PerspectiveViewerElement {
+interface PerspectiveViewerElement extends HTMLElement { // Extend HTMLElement to enable PerspectiveViewerElement behavior
   load: (table: Table) => void,
 }
 
@@ -31,26 +31,38 @@ class Graph extends Component<IProps, {}> {
   }
 
   componentDidMount() {
-    // Get element to attach the table from the DOM.
-    const elem: PerspectiveViewerElement = document.getElementsByTagName('perspective-viewer')[0] as unknown as PerspectiveViewerElement;
+  // Get the first perspective-viewer element from the DOM
+  const elem = document.getElementsByTagName('perspective-viewer')[0] as PerspectiveViewerElement;
 
-    const schema = {
-      stock: 'string',
-      top_ask_price: 'float',
-      top_bid_price: 'float',
-      timestamp: 'date',
-    };
+  const schema = {
+    stock: 'string',
+    top_ask_price: 'float',
+    top_bid_price: 'float',
+    timestamp: 'date',
+  };
 
-    if (window.perspective && window.perspective.worker()) {
-      this.table = window.perspective.worker().table(schema);
-    }
-    if (this.table) {
-      // Load the `table` in the `<perspective-viewer>` DOM reference.
-
-      // Add more Perspective configurations here.
-      elem.load(this.table);
-    }
+  if (window.perspective && window.perspective.worker()) {
+    this.table = window.perspective.worker().table(schema);
   }
+  if (this.table) {
+    // Load the table into the perspective-viewer DOM reference
+    elem.load(this.table);
+
+    // Set additional attributes for data visualization and aggregation
+    // Set the view attribute to visualize the data as a continuous line graph (y_line)
+    elem.setAttribute('view', 'y_line');
+    // Set the column-pivots attribute to organize the data by stock names
+    elem.setAttribute('column-pivots', '["stock"]');
+    // Set the row-pivots attribute to organize the data by timestamps along the x-axis
+    elem.setAttribute('row-pivots', '["timestamp"]');
+    // Set the columns attribute to focus on the top ask price data along the y-axis
+    elem.setAttribute('columns', '["top_ask_price"]');
+    // Set the aggregates attribute to handle duplicated data and perform necessary aggregations
+    // Here, we're using "distinct count" for stock and timestamp, and "avg" (average) for top_ask_price and top_bid_price
+    elem.setAttribute('aggregates', '{"stock":"distinct count","top_ask_price":"avg","top_bid_price":"avg","timestamp":"distinct count"}');
+  }
+}
+
 
   componentDidUpdate() {
     // Everytime the data props is updated, insert the data into Perspective table
